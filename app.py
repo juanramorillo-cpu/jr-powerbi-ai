@@ -6,18 +6,45 @@ import time
 import pandas as pd
 
 # ==========================================
-# 🎨 1. CONFIGURACIÓN VISUAL
+# 🎨 1. CONFIGURACIÓN VISUAL (SaaS Corporativo)
 # ==========================================
-st.set_page_config(page_title="JR Morillo AI - Premium", layout="wide", page_icon="💎")
+st.set_page_config(page_title="I.A. by Juan R. Morillo", layout="wide", page_icon="💎")
 
 st.markdown("""
 <style>
-    .hero-text { font-size: 2.8rem !important; font-weight: 800 !important; color: #0078D4; margin-bottom: 0rem; }
-    .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; padding: 0.6rem; }
+    /* Estilos para el texto de cabecera ajustado */
+    .hero-text { font-size: 2.8rem !important; font-weight: 800 !important; color: #0078D4; margin-bottom: 0rem; letter-spacing: -0.5px; }
+    .sub-hero { font-size: 1.1rem; color: #605E5C; margin-bottom: 2rem; font-weight: 500; }
+    
+    /* Botones profesionales */
+    .stButton>button { width: 100%; border-radius: 6px; background-color: #0078D4; color: white; font-weight: 600; border: none; padding: 0.6rem; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 120, 212, 0.2); }
+    .stButton>button:hover { background-color: #005A9E; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 120, 212, 0.3); color: white; }
+    
+    /* Contenedores de métricas Saas */
+    div[data-testid="metric-container"] { background-color: #F8F9FA; border-radius: 8px; padding: 15px; border-left: 4px solid #0078D4; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #EDEBE9; }
+    
+    /* Separadores limpios */
+    hr { border-top: 1px solid #EDEBE9; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="hero-text">JR MORILLO AI 💎</p>', unsafe_allow_html=True)
+# 🖼️ NUEVA CABECERA CON LOGOS Y NOMBRE ACTUALIZADO
+# Usamos columnas para colocar logos y texto alineados
+col_img1, col_img2, col_text = st.columns([1, 1, 10]) # Columnas pequeñas para logos, grande para texto
+
+with col_img1:
+    # Logo Power BI
+    st.image("https://upload.wikimedia.org/wikipedia/commons/c/cf/New_Power_BI_Logo.svg", width=55)
+
+with col_img2:
+    # Logo Excel (SVG de Wikimedia)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/7/7f/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg", width=55)
+
+with col_text:
+    # Título y Subtítulo Actualizados
+    st.markdown('<p class="hero-text">I.A. by Juan R. Morillo 💎</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-hero">Consultoría Avanzada: DAX, Fórmulas, Auditoría y Diseño de Dashboards</p>', unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ==========================================
@@ -42,7 +69,6 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # 🔥 INSTRUCCIONES RESTAURADAS Y MEJORADAS 🔥
     with st.expander("📥 ¿Cómo preparar tus archivos?"):
         st.markdown("""
         **📊 Para Power BI:**
@@ -165,7 +191,7 @@ if fichero:
         c1, c2, c3 = st.columns(3)
         c1.metric("Tablas/Hojas", len(data["tablas"]))
         c2.metric("Columnas", len(data["columnas"]))
-        c3.metric("Medidas", len(data["medidas"]))
+        c3.metric("Medidas Actuales", len(data["medidas"]))
 
         st.markdown("---")
         t1, t2, t3 = st.tabs(["💡 Generar DAX/Fórmula", "🎨 Diseñar Dashboard", "🩺 Auditoría"])
