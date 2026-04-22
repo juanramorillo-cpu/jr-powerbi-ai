@@ -15,11 +15,7 @@ st.markdown("""
     .hero-text { font-size: 3rem !important; font-weight: 800 !important; color: #0078D4; margin-bottom: 0rem; }
     .sub-hero { font-size: 1.2rem; color: #605E5C; margin-bottom: 2rem; font-weight: 500; }
     .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; padding: 0.7rem; transition: all 0.3s; }
-    .btn-dax { background-color: #0078D4; color: white !important; }
-    .btn-audit { background-color: #D13438; color: white !important; }
-    .btn-wire { background-color: #107C10; color: white !important; }
     div[data-testid="metric-container"] { background-color: #F8F9FA; border-radius: 10px; border: 1px solid #EDEBE9; box-shadow: 2px 2px 5px rgba(0,0,0,0.02); }
-    .report-card { background: white; padding: 20px; border-radius: 10px; border: 1px solid #E1DFDD; margin-top: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -28,32 +24,69 @@ st.markdown('<p class="sub-hero">Consultoría Avanzada: DAX, Auditoría y Diseñ
 st.markdown("---")
 
 # ==========================================
-# ⚙️ 2. BARRA LATERAL
+# ⚙️ 2. BARRA LATERAL (MOTORES RESTAURADOS)
 # ==========================================
 with st.sidebar:
     st.header("⚙️ Configuración")
     api_key = st.text_input("🔑 Gemini API Key:", type="password")
     
-    # ✅ Mensaje visual de conexión restaurado
     if api_key: st.success("✅ Conexión Segura Establecida")
     
     st.markdown("---")
-    st.header("🧠 Motor de Inteligencia")
+    st.header("🧠 Selección de Motor")
+    
+    # 🔥 MOTORES VISIBLES Y CORRECTOS 🔥
     opciones_modelo = {
-        "🚀 Gemini 2.5 Flash Lite (Estable y Rápido)": "gemini-2.5-flash-lite",
-        "⚡ Gemini 2.5 Flash (Potente)": "gemini-2.5-flash",
-        "🧠 Gemini 3.1 Pro (Análisis Profundo)": "gemini-3.1-pro-preview"
+        "🚀 Gemini 2.5 Flash Lite (Rápido y Seguro)": "gemini-2.5-flash-lite",
+        "⚡ Gemini 2.5 Flash (Requiere validación)": "gemini-2.5-flash",
+        "🧠 Gemini 3.1 Pro (Preview Potente)": "gemini-3.1-pro-preview"
     }
-    seleccion = st.selectbox("Elegir motor:", list(opciones_modelo.keys()))
+    
+    seleccion = st.selectbox("Elige la velocidad y profundidad:", list(opciones_modelo.keys()))
     modelo_api = opciones_modelo[seleccion]
+    
+    # El recuadro visual que nos habíamos saltado
+    st.info(f"**Motor activo:** `{modelo_api}`")
 
 # ==========================================
-# 🔍 3. ESCANEO DUAL (POWER BI Y EXCEL)
+# 🛡️ 3. MOTOR DE LLAMADAS (SISTEMA ANTI-503)
+# ==========================================
+def llamar_ia_con_respaldo(prompt_text, motor_elegido, clave_api):
+    url_principal = f"https://generativelanguage.googleapis.com/v1beta/models/{motor_elegido}:generateContent?key={clave_api}"
+    payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
+    
+    try:
+        # Intento 1: Con el motor que has elegido
+        res = requests.post(url_principal, json=payload, timeout=60)
+        
+        if res.status_code == 200:
+            return True, res.json()['candidates'][0]['content']['parts'][0]['text']
+            
+        elif res.status_code == 503:
+            # SISTEMA DE EMERGENCIA: Si hay fallo 503, saltamos al Lite
+            st.warning(f"⚠️ El motor seleccionado está saturado (503). Activando motor de respaldo (Flash Lite)...")
+            url_respaldo = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={clave_api}"
+            res_respaldo = requests.post(url_respaldo, json=payload, timeout=60)
+            
+            if res_respaldo.status_code == 200:
+                st.success("✅ Resuelto con motor de respaldo.")
+                return True, res_respaldo.json()['candidates'][0]['content']['parts'][0]['text']
+            else:
+                return False, f"Fallo total en servidores. Código: {res_respaldo.status_code}"
+        else:
+            return False, f"Error de Google: {res.status_code}"
+            
+    except requests.exceptions.Timeout:
+        return False, "⏳ Tiempo de espera agotado."
+    except Exception as e:
+        return False, f"❌ Error de red: {e}"
+
+# ==========================================
+# 🔍 4. ESCANEO DUAL (POWER BI Y EXCEL)
 # ==========================================
 def escanear_archivo(file):
     datos = {"tablas": [], "columnas": [], "medidas": [], "tipo": "Desconocido"}
     
-    # MODO EXCEL
     if file.name.endswith('.xlsx'):
         try:
             excel = pd.ExcelFile(file)
@@ -65,7 +98,6 @@ def escanear_archivo(file):
             return datos
         except: return None
 
-    # MODO POWER BI (ZIP)
     try:
         with zipfile.ZipFile(file, 'r') as z:
             archivos = z.namelist()
@@ -85,7 +117,7 @@ def escanear_archivo(file):
     except: return None
 
 # ==========================================
-# 🚀 4. INTERFAZ PRINCIPAL Y HERRAMIENTAS
+# 🚀 5. INTERFAZ PRINCIPAL
 # ==========================================
 archivo = st.file_uploader("📂 Sube tu Proyecto Power BI (.zip) o Excel (.xlsx)", type=["zip", "xlsx"])
 
@@ -105,64 +137,43 @@ if archivo:
         
         tab1, tab2, tab3 = st.tabs(["💡 Generador DAX / Fórmulas", "🎨 Diseñador de Dashboard", "🩺 Auditor de Salud"])
 
-        # ---------------- TAB 1: DAX Y FÓRMULAS ----------------
+        # ---------------- TAB 1: DAX ----------------
         with tab1:
-            pregunta_dax = st.text_area("Describe la medida DAX o fórmula de Excel que necesitas:", placeholder="Ej: Calcula el margen de beneficio comparando con el año anterior...")
+            pregunta_dax = st.text_area("Describe la medida DAX o fórmula de Excel:", placeholder="Ej: Calcula el margen de beneficio...")
             if st.button("🚀 Generar Código", key="btn_dax"):
-                if not api_key: st.error("Introduce tu API Key en la barra lateral.")
+                if not api_key: st.error("Falta API Key")
                 else:
-                    with st.spinner("Programando..."):
-                        rol = "Experto en Excel" if "Excel" in modelo['tipo'] else "Experto Senior en Power BI"
-                        prompt = f"Actúa como {rol}. Estructura del archivo: {modelo}. Pregunta: {pregunta_dax}. Devuelve solo el código o fórmula y una breve explicación de cómo funciona."
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo_api}:generateContent?key={api_key}"
-                        
-                        try:
-                            res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=60)
-                            if res.status_code == 200:
-                                st.markdown(res.json()['candidates'][0]['content']['parts'][0]['text'])
-                            else:
-                                st.error(f"Error de conexión: {res.status_code}. Intenta usar el motor Flash Lite.")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
+                    with st.spinner("Pensando..."):
+                        rol = "Experto en Excel" if "Excel" in modelo['tipo'] else "Experto en Power BI"
+                        prompt = f"Actúa como {rol}. Estructura: {modelo}. Pregunta: {pregunta_dax}. Devuelve solo el código y una breve explicación."
+                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
+                        if exito: st.markdown(respuesta)
+                        else: st.error(respuesta)
 
-        # ---------------- TAB 2: WIREFRAME Y DISEÑO ----------------
+        # ---------------- TAB 2: DISEÑO ----------------
         with tab2:
-            st.info("La IA actuará como diseñador UX/UI y te dirá exactamente cómo estructurar tu informe visualmente basándose en las tablas detectadas.")
-            objetivo = st.text_input("¿Cuál es el objetivo principal de este Dashboard?", placeholder="Ej: Control de ventas y rentabilidad por agente comercial...")
+            st.info("La IA actuará como diseñador UX/UI.")
+            objetivo = st.text_input("¿Cuál es el objetivo principal del Dashboard?", placeholder="Ej: Control de ventas...")
             if st.button("🎨 Crear Boceto Visual", key="btn_wire"):
-                if not api_key: st.error("Introduce tu API Key en la barra lateral.")
+                if not api_key: st.error("Falta API Key")
                 else:
                     with st.spinner("Diseñando interfaz..."):
-                        prompt = f"Actúa como Diseñador de UX/UI experto en visualización de datos. Analiza estas tablas: {modelo['tablas']} y columnas: {modelo['columnas']}. El objetivo es: {objetivo}. Diseña una estructura de Dashboard (Header, Filtros, KPIs, Gráficos principales) indicando exactamente qué columnas de las que te he pasado usar en cada objeto visual. Estructura la respuesta con Markdown (listas, negritas) para que sea un esquema fácil de leer."
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo_api}:generateContent?key={api_key}"
-                        
-                        try:
-                            res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=60)
-                            if res.status_code == 200:
-                                st.markdown(res.json()['candidates'][0]['content']['parts'][0]['text'])
-                            else:
-                                st.error(f"Error de conexión: {res.status_code}. Intenta usar el motor Flash Lite.")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
+                        prompt = f"Actúa como Diseñador experto en visualización. Tablas: {modelo['tablas']}. Columnas: {modelo['columnas']}. Objetivo: {objetivo}. Diseña una estructura visual indicando qué columnas usar."
+                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
+                        if exito: st.markdown(respuesta)
+                        else: st.error(respuesta)
 
-        # ---------------- TAB 3: AUDITORÍA DE SALUD ----------------
+        # ---------------- TAB 3: AUDITORÍA ----------------
         with tab3:
-            st.warning("Se escaneará tu modelo en busca de malas prácticas de modelado, tablas huérfanas o falta de dimensiones clave.")
+            st.warning("Se escaneará tu modelo en busca de malas prácticas.")
             if st.button("🩺 Ejecutar Auditoría", key="btn_audit"):
-                if not api_key: st.error("Introduce tu API Key en la barra lateral.")
+                if not api_key: st.error("Falta API Key")
                 else:
-                    with st.spinner("Escaneando debilidades del modelo..."):
-                        prompt = f"Actúa como Arquitecto de Datos experto. Analiza la estructura de este modelo: {modelo}. Busca errores comunes (falta de tabla calendario, nombres técnicos o poco claros, exceso de columnas por tabla, falta de medidas si es Power BI, etc). Devuelve un informe con: 1. Puntuación de Salud (0-100), 2. Puntos Críticos encontrados (Rojo), 3. Puntos de Mejora (Amarillo), 4. Buenas prácticas detectadas (Verde)."
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo_api}:generateContent?key={api_key}"
-                        
-                        try:
-                            res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=60)
-                            if res.status_code == 200:
-                                st.markdown(res.json()['candidates'][0]['content']['parts'][0]['text'])
-                            else:
-                                st.error(f"Error de conexión: {res.status_code}. Intenta usar el motor Flash Lite.")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
+                    with st.spinner("Escaneando debilidades..."):
+                        prompt = f"Actúa como Arquitecto de Datos. Analiza este modelo: {modelo}. Busca errores comunes. Devuelve un informe con Puntuación, Puntos Críticos y Puntos de Mejora."
+                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
+                        if exito: st.markdown(respuesta)
+                        else: st.error(respuesta)
 
 else:
-    st.info("Sube un proyecto de Power BI (.zip) o un libro de Excel (.xlsx) para desbloquear las herramientas de consultoría.")
+    st.info("Sube un proyecto de Power BI (.zip) o un Excel (.xlsx) para desbloquear las herramientas.")
