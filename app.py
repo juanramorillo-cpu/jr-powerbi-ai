@@ -28,21 +28,20 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 🖼️ NUEVA CABECERA CON LOGOS Y NOMBRE ACTUALIZADO
-# Usamos columnas para colocar logos y texto alineados
-col_img1, col_img2, col_text = st.columns([1, 1, 10]) # Columnas pequeñas para logos, grande para texto
+# 🖼️ NUEVA CABECERA CON LOGOS EN FORMATO PNG
+col_img1, col_img2, col_text = st.columns([1, 1, 10])
 
 with col_img1:
-    # Logo Power BI
-    st.image("https://upload.wikimedia.org/wikipedia/commons/c/cf/New_Power_BI_Logo.svg", width=55)
+    # Logo Power BI (PNG)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/New_Power_BI_Logo.svg/256px-New_Power_BI_Logo.svg.png", width=55)
 
 with col_img2:
-    # Logo Excel (SVG de Wikimedia)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/7/7f/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg", width=55)
+    # Logo Excel (PNG)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg/256px-Microsoft_Office_Excel_%282019%E2%80%93present%29.svg.png", width=55)
 
 with col_text:
-    # Título y Subtítulo Actualizados
-    st.markdown('<p class="hero-text">I.A. by Juan R. Morillo 💎</p>', unsafe_allow_html=True)
+    # Título y Subtítulo
+    st.markdown('<p class="hero-text">IA by Juan R. Morillo 💎</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-hero">Consultoría Avanzada: DAX, Fórmulas, Auditoría y Diseño de Dashboards</p>', unsafe_allow_html=True)
 
 st.markdown("---")
