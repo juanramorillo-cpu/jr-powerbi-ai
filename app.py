@@ -41,7 +41,7 @@ with st.sidebar:
     st.info(f"**Activo:** `{modelo_api}`")
 
 # ==========================================
-# 🛡️ 3. MOTOR DE PETICIONES (CON CONTROL DE ERRORES)
+# 🛡️ 3. MOTOR DE PETICIONES
 # ==========================================
 def peticion_ia(prompt, modelo, clave):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={clave}"
@@ -51,9 +51,8 @@ def peticion_ia(prompt, modelo, clave):
         if res.status_code == 200:
             return res.json()['candidates'][0]['content']['parts'][0]['text']
         elif res.status_code == 403:
-            return "❌ **Error 403 (Permisos):** Tu clave no tiene permisos para este modelo. Por favor, genera una nueva clave en Google AI Studio eligiendo 'Create API Key in new project'."
+            return "❌ **Error 403 (Permisos):** Tu clave no tiene permisos para este modelo. Genera una nueva clave en Google AI Studio en un proyecto nuevo."
         elif res.status_code == 503:
-            # Reintento automático con Lite
             url_lite = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={clave}"
             res_lite = requests.post(url_lite, json=payload, timeout=60)
             return res_lite.json()['candidates'][0]['content']['parts'][0]['text'] if res_lite.status_code == 200 else "❌ Error 503 persistente."
@@ -63,12 +62,12 @@ def peticion_ia(prompt, modelo, clave):
         return f"❌ Error de red: {str(e)}"
 
 # ==========================================
-# 🔍 4. ESCÁNER DUAL (EXCEL Y POWER BI)
+# 🔍 4. ESCÁNER DUAL HÍBRIDO (TMDL Y BIM)
 # ==========================================
 def analizar_fichero(file):
     res = {"tablas": [], "columnas": [], "medidas": [], "tipo": "Desconocido", "debug": []}
     
-    # --- PROCESO EXCEL ---
+    # --- MODO EXCEL ---
     if file.name.lower().endswith('.xlsx'):
         try:
             res["tipo"] = "Excel"
@@ -82,28 +81,48 @@ def analizar_fichero(file):
             res["debug"].append(f"Error Excel: {str(e)}")
             return res
 
-    # --- PROCESO POWER BI (ZIP) ---
+    # --- MODO POWER BI (ZIP) ---
     if file.name.lower().endswith('.zip'):
         try:
-            res["tipo"] = "Power BI"
             with zipfile.ZipFile(file, 'r') as z:
                 nombres = z.namelist()
                 res["debug"] = nombres
-                # Buscamos tablas en formato TMDL
+                
                 tmdls = [f for f in nombres if '/tables/' in f and f.endswith('.tmdl')]
-                for f in tmdls:
-                    t_name = f.split('/')[-1].replace('.tmdl', '')
-                    if "DateTable" not in t_name and "LocalDate" not in t_name:
-                        res["tablas"].append(t_name)
-                        content = z.read(f).decode('utf-8', errors='ignore')
-                        for linea in content.split('\n'):
-                            l = linea.strip()
-                            if l.startswith('column '):
-                                c = l.split('column ')[1].split('=')[0].strip().strip('"')
-                                res["columnas"].append(f"{t_name}[{c}]")
-                            elif l.startswith('measure '):
-                                m = l.split('measure ')[1].split('=')[0].strip().strip('"')
-                                res["medidas"].append(m)
+                bims = [f for f in nombres if f.endswith('model.bim')]
+
+                # 1. Intentar leer formato clásico (BIM) <-- EL TUYO
+                if bims:
+                    res["tipo"] = "Power BI (Formato BIM)"
+                    archivo_bim = bims[0]
+                    content = z.read(archivo_bim).decode('utf-8', errors='ignore')
+                    modelo_json = json.loads(content)
+                    
+                    for tabla in modelo_json.get('model', {}).get('tables', []):
+                        t_name = tabla.get('name', '')
+                        if "DateTable" not in t_name and "LocalDate" not in t_name and "Date" != t_name:
+                            res["tablas"].append(t_name)
+                            for col in tabla.get('columns', []):
+                                res["columnas"].append(f"{t_name}[{col.get('name')}]")
+                            for med in tabla.get('measures', []):
+                                res["medidas"].append(med.get('name'))
+                                
+                # 2. Intentar leer formato nuevo (TMDL)
+                elif tmdls:
+                    res["tipo"] = "Power BI (Formato TMDL)"
+                    for f in tmdls:
+                        t_name = f.split('/')[-1].replace('.tmdl', '')
+                        if "DateTable" not in t_name and "LocalDate" not in t_name:
+                            res["tablas"].append(t_name)
+                            content = z.read(f).decode('utf-8', errors='ignore')
+                            for linea in content.split('\n'):
+                                l = linea.strip()
+                                if l.startswith('column '):
+                                    c = l.split('column ')[1].split('=')[0].strip().strip('"')
+                                    res["columnas"].append(f"{t_name}[{c}]")
+                                elif l.startswith('measure '):
+                                    m = l.split('measure ')[1].split('=')[0].strip().strip('"')
+                                    res["medidas"].append(m)
             return res
         except Exception as e:
             res["debug"].append(f"Error ZIP: {str(e)}")
@@ -122,15 +141,13 @@ if fichero:
     if data["tipo"] == "Desconocido":
         st.error("Formato de archivo no soportado.")
     elif not data["tablas"]:
-        # Error específico según tipo
         if data["tipo"] == "Excel":
-            st.error("No se han podido leer las hojas del Excel. Asegúrate de que no esté protegido con contraseña.")
+            st.error("No se han podido leer las hojas del Excel. Asegúrate de que no esté protegido.")
         else:
-            st.error("No se ha detectado la estructura de un 'Proyecto de Power BI' (.pbip) dentro del ZIP.")
+            st.error("No se ha detectado el modelo de datos (TMDL o BIM) en el archivo ZIP.")
             with st.expander("Ver contenido técnico del ZIP"):
                 st.write(data["debug"])
     else:
-        # ÉXITO: MOSTRAR CONTENIDO
         st.success(f"Análisis completado: {data['tipo']}")
         c1, c2, c3 = st.columns(3)
         c1.metric("Tablas/Hojas", len(data["tablas"]))
@@ -145,20 +162,23 @@ if fichero:
             if st.button("🚀 Crear Código"):
                 if not api_key: st.error("Falta API Key")
                 else:
-                    prompt = f"Actúa como experto en {data['tipo']}. Estructura: {data}. Pregunta: {preg}. Devuelve el código y una explicación corta."
-                    st.markdown(peticion_ia(prompt, modelo_api, api_key))
+                    with st.spinner("Pensando..."):
+                        prompt = f"Actúa como experto en {data['tipo']}. Estructura: {data}. Pregunta: {preg}. Devuelve el código y una explicación corta."
+                        st.markdown(peticion_ia(prompt, modelo_api, api_key))
 
         with t2:
             obj = st.text_input("Objetivo del informe:", placeholder="Ej: Control de costes...")
             if st.button("🎨 Crear Wireframe"):
                 if not api_key: st.error("Falta API Key")
                 else:
-                    prompt = f"Diseña un dashboard para: {obj}. Usa estas tablas: {data['tablas']}. Indica qué columnas usar en cada gráfico."
-                    st.markdown(peticion_ia(prompt, modelo_api, api_key))
+                    with st.spinner("Diseñando..."):
+                        prompt = f"Diseña un dashboard para: {obj}. Usa estas tablas: {data['tablas']}. Indica qué columnas de {data['columnas']} usar en cada gráfico."
+                        st.markdown(peticion_ia(prompt, modelo_api, api_key))
 
         with t3:
             if st.button("🩺 Auditoría de Salud"):
                 if not api_key: st.error("Falta API Key")
                 else:
-                    prompt = f"Audita este modelo de {data['tipo']}: {data}. Indica errores y mejoras."
-                    st.markdown(peticion_ia(prompt, modelo_api, api_key))
+                    with st.spinner("Analizando..."):
+                        prompt = f"Audita este modelo de {data['tipo']}: {data}. Indica errores estructurales y buenas prácticas."
+                        st.markdown(peticion_ia(prompt, modelo_api, api_key))
