@@ -44,6 +44,7 @@ with col_text:
     st.markdown('<p class="hero-text">I.A. by Juan R. Morillo 💎</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-hero">Consultoría Avanzada: DAX, Fórmulas, Auditoría y Diseño de Dashboards</p>', unsafe_allow_html=True)
 
+st.markdown("---")
 
 # ==========================================
 # ⚙️ 2. BARRA LATERAL E INSTRUCCIONES
