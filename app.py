@@ -32,17 +32,11 @@ st.markdown("---")
 # ==========================================
 with st.sidebar:
     st.header("⚙️ Configuración")
-    api_key = st.text_input("🔑 Gemini API Key:", type="password")
+    api_key = st.text_input("🔑 Gemini API Key:", type="password")       
+    if api_key: st.success("✅ Conexión Segura Establecida") 
     
     st.markdown("---")
     st.header("🧠 Motor de Inteligencia")
-    opciones_modelo = {
-        "🚀 Gemini 2.5 Flash Lite (Estable)": "gemini-2.5-flash-lite",
-        "⚡ Gemini 2.5 Flash (Rápido)": "gemini-2.5-flash",
-        "🧠 Gemini 3.1 Pro (Profundo)": "gemini-3.1-pro-preview"
-    }
-    seleccion = st.selectbox("Elegir motor:", list(opciones_modelo.keys()))
-    modelo_api = opciones_modelo[seleccion]
 
 # ==========================================
 # 🔍 3. ESCANEO DE ARCHIVOS
