@@ -28,16 +28,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 🖼️ NUEVA CABECERA CON LOGOS EN FORMATO PNG
+# 🖼️ NUEVA CABECERA CON LOGOS (SERVIDORES CDN 100% ESTABLES)
 col_img1, col_img2, col_text = st.columns([1, 1, 10])
 
 with col_img1:
-    # Logo Power BI (PNG)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/New_Power_BI_Logo.svg/256px-New_Power_BI_Logo.svg.png", width=55)
+    # Logo Power BI
+    st.image("https://img.icons8.com/color/96/power-bi.png", width=55)
 
 with col_img2:
-    # Logo Excel (PNG)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg/256px-Microsoft_Office_Excel_%282019%E2%80%93present%29.svg.png", width=55)
+    # Logo Excel
+    st.image("https://img.icons8.com/color/96/microsoft-excel-2019--v1.png", width=55)
 
 with col_text:
     # Título y Subtítulo
