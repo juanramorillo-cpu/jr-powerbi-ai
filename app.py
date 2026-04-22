@@ -21,7 +21,7 @@ st.markdown('<p class="hero-text">JR MORILLO AI 💎</p>', unsafe_allow_html=Tru
 st.markdown("---")
 
 # ==========================================
-# ⚙️ 2. BARRA LATERAL
+# ⚙️ 2. BARRA LATERAL E INSTRUCCIONES
 # ==========================================
 with st.sidebar:
     st.header("⚙️ Configuración")
@@ -39,6 +39,23 @@ with st.sidebar:
     seleccion = st.selectbox("Elegir motor:", list(opciones_modelo.keys()))
     modelo_api = opciones_modelo[seleccion]
     st.info(f"**Activo:** `{modelo_api}`")
+
+    st.markdown("---")
+    
+    # 🔥 INSTRUCCIONES RESTAURADAS Y MEJORADAS 🔥
+    with st.expander("📥 ¿Cómo preparar tus archivos?"):
+        st.markdown("""
+        **📊 Para Power BI:**
+        1. Abre tu informe en Power BI Desktop.
+        2. Ve a *Archivo > Guardar como...* y elige **Proyecto de Power BI (.pbip)**.
+        3. Ve a la carpeta donde lo guardaste en tu PC.
+        4. Selecciona la carpeta `.SemanticModel` y el archivo `model.bim`.
+        5. Haz clic derecho y dales a **Comprimir en archivo .ZIP**.
+        6. Sube ese archivo ZIP a esta aplicación.
+        
+        **📗 Para Excel:**
+        1. Simplemente sube tu archivo `.xlsx` (Asegúrate de que no tenga contraseña de apertura).
+        """)
 
 # ==========================================
 # 🛡️ 3. MOTOR DE PETICIONES
@@ -67,7 +84,6 @@ def peticion_ia(prompt, modelo, clave):
 def analizar_fichero(file):
     res = {"tablas": [], "columnas": [], "medidas": [], "tipo": "Desconocido", "debug": []}
     
-    # --- MODO EXCEL ---
     if file.name.lower().endswith('.xlsx'):
         try:
             res["tipo"] = "Excel"
@@ -81,7 +97,6 @@ def analizar_fichero(file):
             res["debug"].append(f"Error Excel: {str(e)}")
             return res
 
-    # --- MODO POWER BI (ZIP) ---
     if file.name.lower().endswith('.zip'):
         try:
             with zipfile.ZipFile(file, 'r') as z:
@@ -91,7 +106,6 @@ def analizar_fichero(file):
                 tmdls = [f for f in nombres if '/tables/' in f and f.endswith('.tmdl')]
                 bims = [f for f in nombres if f.endswith('model.bim')]
 
-                # 1. Intentar leer formato clásico (BIM) <-- EL TUYO
                 if bims:
                     res["tipo"] = "Power BI (Formato BIM)"
                     archivo_bim = bims[0]
@@ -107,7 +121,6 @@ def analizar_fichero(file):
                             for med in tabla.get('measures', []):
                                 res["medidas"].append(med.get('name'))
                                 
-                # 2. Intentar leer formato nuevo (TMDL)
                 elif tmdls:
                     res["tipo"] = "Power BI (Formato TMDL)"
                     for f in tmdls:
@@ -158,7 +171,7 @@ if fichero:
         t1, t2, t3 = st.tabs(["💡 Generar DAX/Fórmula", "🎨 Diseñar Dashboard", "🩺 Auditoría"])
 
         with t1:
-            preg = st.text_area("¿Qué necesitas calcular?", placeholder="Ej: Varianza de ventas...")
+            preg = st.text_area("¿Qué necesitas calcular?", placeholder="Ej: Varianza de ventas contra el año anterior...")
             if st.button("🚀 Crear Código"):
                 if not api_key: st.error("Falta API Key")
                 else:
@@ -167,7 +180,7 @@ if fichero:
                         st.markdown(peticion_ia(prompt, modelo_api, api_key))
 
         with t2:
-            obj = st.text_input("Objetivo del informe:", placeholder="Ej: Control de costes...")
+            obj = st.text_input("Objetivo del informe:", placeholder="Ej: Control de costes por departamento...")
             if st.button("🎨 Crear Wireframe"):
                 if not api_key: st.error("Falta API Key")
                 else:
@@ -182,3 +195,6 @@ if fichero:
                     with st.spinner("Analizando..."):
                         prompt = f"Audita este modelo de {data['tipo']}: {data}. Indica errores estructurales y buenas prácticas."
                         st.markdown(peticion_ia(prompt, modelo_api, api_key))
+else:
+    # Mensaje de bienvenida en la pantalla principal si no hay archivo
+    st.info("👋 ¡Bienvenido! Sube tu proyecto de Power BI (.zip) o tu libro de Excel (.xlsx) para comenzar la auditoría o generar código.")
