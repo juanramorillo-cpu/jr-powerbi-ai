@@ -12,168 +12,172 @@ st.set_page_config(page_title="JR Morillo AI - Premium", layout="wide", page_ico
 
 st.markdown("""
 <style>
-    .hero-text { font-size: 3rem !important; font-weight: 800 !important; color: #0078D4; margin-bottom: 0rem; }
-    .sub-hero { font-size: 1.2rem; color: #605E5C; margin-bottom: 2rem; font-weight: 500; }
-    .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; padding: 0.7rem; transition: all 0.3s; }
-    div[data-testid="metric-container"] { background-color: #F8F9FA; border-radius: 10px; border: 1px solid #EDEBE9; box-shadow: 2px 2px 5px rgba(0,0,0,0.02); }
+    .hero-text { font-size: 2.8rem !important; font-weight: 800 !important; color: #0078D4; margin-bottom: 0rem; }
+    .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; padding: 0.6rem; }
+    .status-box { padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ddd; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="hero-text">JR MORILLO AI 💎</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-hero">Consultoría Avanzada: DAX, Auditoría y Diseño de Dashboards</p>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ==========================================
-# ⚙️ 2. BARRA LATERAL (MOTORES RESTAURADOS)
+# ⚙️ 2. BARRA LATERAL (RESTAURADA TOTALMENTE)
 # ==========================================
 with st.sidebar:
     st.header("⚙️ Configuración")
     api_key = st.text_input("🔑 Gemini API Key:", type="password")
     
-    if api_key: st.success("✅ Conexión Segura Establecida")
-    
+    if api_key: 
+        st.success("✅ Clave detectada")
+    else:
+        st.warning("⚠️ Falta API Key")
+
     st.markdown("---")
     st.header("🧠 Selección de Motor")
     
-    # 🔥 MOTORES VISIBLES Y CORRECTOS 🔥
     opciones_modelo = {
-        "🚀 Gemini 2.5 Flash Lite (Rápido y Seguro)": "gemini-2.5-flash-lite",
-        "⚡ Gemini 2.5 Flash (Requiere validación)": "gemini-2.5-flash",
-        "🧠 Gemini 3.1 Pro (Preview Potente)": "gemini-3.1-pro-preview"
+        "🚀 Gemini 2.5 Flash Lite (Más estable)": "gemini-2.5-flash-lite",
+        "⚡ Gemini 2.5 Flash (Equilibrado)": "gemini-2.5-flash",
+        "🧠 Gemini 3.1 Pro (Máxima potencia)": "gemini-3.1-pro-preview"
     }
     
-    seleccion = st.selectbox("Elige la velocidad y profundidad:", list(opciones_modelo.keys()))
-    modelo_api = opciones_modelo[seleccion]
+    # Aseguramos que la variable modelo_api esté siempre disponible
+    seleccion_nombre = st.selectbox("Motor inteligente:", list(opciones_modelo.keys()))
+    modelo_api = opciones_modelo[seleccion_nombre]
     
-    # El recuadro visual que nos habíamos saltado
-    st.info(f"**Motor activo:** `{modelo_api}`")
+    st.info(f"**Activo:** `{modelo_api}`")
 
 # ==========================================
-# 🛡️ 3. MOTOR DE LLAMADAS (SISTEMA ANTI-503)
+# 🛡️ 3. GESTOR DE LLAMADAS (ANTI-403 Y ANTI-503)
 # ==========================================
-def llamar_ia_con_respaldo(prompt_text, motor_elegido, clave_api):
-    url_principal = f"https://generativelanguage.googleapis.com/v1beta/models/{motor_elegido}:generateContent?key={clave_api}"
-    payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
+def peticion_ia(prompt, modelo, clave):
+    # Intentamos primero con el modelo elegido
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={clave}"
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
     try:
-        # Intento 1: Con el motor que has elegido
-        res = requests.post(url_principal, json=payload, timeout=60)
+        res = requests.post(url, json=payload, timeout=60)
         
         if res.status_code == 200:
-            return True, res.json()['candidates'][0]['content']['parts'][0]['text']
+            return res.json()['candidates'][0]['content']['parts'][0]['text']
+        
+        elif res.status_code == 403:
+            return "❌ **Error 403 (Permiso Denegado):** Tu API Key no tiene permisos para este modelo. Por favor, crea una nueva clave en Google AI Studio asegurándote de que el proyecto tenga habilitada la API de Gemini."
             
         elif res.status_code == 503:
-            # SISTEMA DE EMERGENCIA: Si hay fallo 503, saltamos al Lite
-            st.warning(f"⚠️ El motor seleccionado está saturado (503). Activando motor de respaldo (Flash Lite)...")
-            url_respaldo = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={clave_api}"
-            res_respaldo = requests.post(url_respaldo, json=payload, timeout=60)
-            
-            if res_respaldo.status_code == 200:
-                st.success("✅ Resuelto con motor de respaldo.")
-                return True, res_respaldo.json()['candidates'][0]['content']['parts'][0]['text']
+            st.warning("⚠️ Motor saturado. Saltando a Flash Lite (Emergencia)...")
+            url_lite = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={clave}"
+            res_lite = requests.post(url_lite, json=payload, timeout=60)
+            if res_lite.status_code == 200:
+                return res_lite.json()['candidates'][0]['content']['parts'][0]['text']
             else:
-                return False, f"Fallo total en servidores. Código: {res_respaldo.status_code}"
+                return f"❌ Fallo masivo en Google (503). Inténtalo en un minuto."
+        
         else:
-            return False, f"Error de Google: {res.status_code}"
+            return f"❌ Error {res.status_code}: {res.text}"
             
-    except requests.exceptions.Timeout:
-        return False, "⏳ Tiempo de espera agotado."
     except Exception as e:
-        return False, f"❌ Error de red: {e}"
+        return f"❌ Error de red: {str(e)}"
 
 # ==========================================
-# 🔍 4. ESCANEO DUAL (POWER BI Y EXCEL)
+# 🔍 4. ESCÁNER DE ARCHIVOS (REFORZADO)
 # ==========================================
-def escanear_archivo(file):
-    datos = {"tablas": [], "columnas": [], "medidas": [], "tipo": "Desconocido"}
+def analizar_archivo(file):
+    resumen = {"tablas": [], "columnas": [], "medidas": [], "tipo": "Desconocido", "log": []}
     
     if file.name.endswith('.xlsx'):
         try:
-            excel = pd.ExcelFile(file)
-            datos["tipo"] = "Excel (.xlsx)"
-            datos["tablas"] = excel.sheet_names
-            for sheet in excel.sheet_names:
-                df = pd.read_excel(file, sheet_name=sheet, nrows=1)
-                datos["columnas"].extend([f"{sheet}[{c}]" for c in df.columns])
-            return datos
-        except: return None
+            resumen["tipo"] = "Excel"
+            xls = pd.ExcelFile(file)
+            resumen["tablas"] = xls.sheet_names
+            for hoja in xls.sheet_names:
+                df = pd.read_excel(file, sheet_name=hoja, nrows=1)
+                resumen["columnas"].extend([f"{hoja}[{c}]" for c in df.columns])
+            return resumen
+        except Exception as e:
+            resumen["log"].append(f"Error Excel: {e}")
+            return resumen
 
+    # MODO ZIP (POWER BI)
     try:
         with zipfile.ZipFile(file, 'r') as z:
-            archivos = z.namelist()
-            archivos_tmdl = [f for f in archivos if f.endswith('.tmdl') and '/tables/' in f]
+            nombres = z.namelist()
+            resumen["log"] = nombres # Guardamos la lista de archivos para debug
+            
+            # Buscamos tablas en TMDL
+            archivos_tmdl = [f for f in nombres if '/tables/' in f and f.endswith('.tmdl')]
+            
             if archivos_tmdl:
-                datos["tipo"] = "Power BI (TMDL)"
+                resumen["tipo"] = "PBI (TMDL)"
                 for f in archivos_tmdl:
-                    t_name = f.split('/')[-1].replace('.tmdl', '')
-                    if not t_name.startswith('DateTable') and not t_name.startswith('LocalDate'):
-                        datos["tablas"].append(t_name)
-                        content = z.read(f).decode('utf-8', errors='ignore')
-                        for linea in content.split('\n'):
-                            linea = linea.strip()
-                            if linea.startswith('column '): datos["columnas"].append(f"{t_name}[{linea.split('column ')[1].split('=')[0].strip().strip('\"')}]")
-                            elif linea.startswith('measure '): datos["medidas"].append(linea.split('measure ')[1].split('=')[0].strip().strip('\"'))
-            return datos
-    except: return None
-
-# ==========================================
-# 🚀 5. INTERFAZ PRINCIPAL
-# ==========================================
-archivo = st.file_uploader("📂 Sube tu Proyecto Power BI (.zip) o Excel (.xlsx)", type=["zip", "xlsx"])
-
-if archivo:
-    with st.spinner("Analizando estructura..."):
-        modelo = escanear_archivo(archivo)
-    
-    if modelo:
-        st.markdown(f"### 📋 Resumen del Modelo Detectado: `{modelo['tipo']}`")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Tablas/Hojas", len(modelo['tablas']))
-        col2.metric("Columnas/Campos", len(modelo['columnas']))
-        col3.metric("Medidas Actuales", len(modelo['medidas']))
-
-        st.markdown("---")
-        st.markdown("### 🛠️ ¿Qué acción quieres realizar hoy?")
+                    nombre_tabla = f.split('/')[-1].replace('.tmdl', '')
+                    if "DateTable" not in nombre_tabla:
+                        resumen["tablas"].append(nombre_tabla)
+                        try:
+                            content = z.read(f).decode('utf-8', errors='ignore')
+                            for linea in content.split('\n'):
+                                linea = linea.strip()
+                                if linea.startswith('column '):
+                                    col = linea.split('column ')[1].split('=')[0].strip().strip('"')
+                                    resumen["columnas"].append(f"{nombre_tabla}[{col}]")
+                                elif linea.startswith('measure '):
+                                    med = linea.split('measure ')[1].split('=')[0].strip().strip('"')
+                                    resumen["medidas"].append(med)
+                        except: pass
+            else:
+                resumen["tipo"] = "ZIP (No es formato Proyecto PBI)"
+    except Exception as e:
+        resumen["log"].append(f"Error ZIP: {e}")
         
-        tab1, tab2, tab3 = st.tabs(["💡 Generador DAX / Fórmulas", "🎨 Diseñador de Dashboard", "🩺 Auditor de Salud"])
+    return resumen
 
-        # ---------------- TAB 1: DAX ----------------
-        with tab1:
-            pregunta_dax = st.text_area("Describe la medida DAX o fórmula de Excel:", placeholder="Ej: Calcula el margen de beneficio...")
-            if st.button("🚀 Generar Código", key="btn_dax"):
-                if not api_key: st.error("Falta API Key")
+# ==========================================
+# 🚀 5. LÓGICA DE INTERFAZ
+# ==========================================
+fichero = st.file_uploader("📂 Sube tu ZIP de Power BI o tu Excel", type=["zip", "xlsx"])
+
+if fichero:
+    data = analizar_archivo(fichero)
+    
+    # MOSTRAMOS EL CONTENIDO SIEMPRE
+    st.markdown(f"### 📊 Estructura detectada ({data['tipo']})")
+    
+    if not data["tablas"]:
+        st.error("No se han detectado tablas o carpetas de datos. Asegúrate de que el ZIP contiene la estructura de 'Proyecto de Power BI' (.pbip).")
+        with st.expander("Ver archivos dentro del ZIP (Debug)"):
+            st.write(data["log"])
+    else:
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Tablas", len(data["tablas"]))
+        col2.metric("Columnas", len(data["columnas"]))
+        col3.metric("Medidas", len(data["medidas"]))
+
+        # PESTAÑAS DE ACCIÓN
+        t1, t2, t3 = st.tabs(["💡 Generar DAX", "🎨 Diseñar Dashboard", "🩺 Auditoría"])
+
+        with t1:
+            pregunta = st.text_area("¿Qué lógica necesitas?", placeholder="Ej: Suma de ventas acumulada...")
+            if st.button("🚀 Crear Código"):
+                if not api_key: st.error("Falta la clave API")
                 else:
-                    with st.spinner("Pensando..."):
-                        rol = "Experto en Excel" if "Excel" in modelo['tipo'] else "Experto en Power BI"
-                        prompt = f"Actúa como {rol}. Estructura: {modelo}. Pregunta: {pregunta_dax}. Devuelve solo el código y una breve explicación."
-                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
-                        if exito: st.markdown(respuesta)
-                        else: st.error(respuesta)
+                    contexto = f"Archivo: {data['tipo']}. Tablas: {data['tablas']}. Columnas: {data['columnas']}. Pregunta: {pregunta}"
+                    respuesta = peticion_ia(contexto, modelo_api, api_key)
+                    st.markdown(respuesta)
 
-        # ---------------- TAB 2: DISEÑO ----------------
-        with tab2:
-            st.info("La IA actuará como diseñador UX/UI.")
-            objetivo = st.text_input("¿Cuál es el objetivo principal del Dashboard?", placeholder="Ej: Control de ventas...")
-            if st.button("🎨 Crear Boceto Visual", key="btn_wire"):
-                if not api_key: st.error("Falta API Key")
+        with t2:
+            objetivo = st.text_input("Objetivo del informe:", placeholder="Ej: Ventas por región...")
+            if st.button("🎨 Generar Wireframe"):
+                if not api_key: st.error("Falta la clave API")
                 else:
-                    with st.spinner("Diseñando interfaz..."):
-                        prompt = f"Actúa como Diseñador experto en visualización. Tablas: {modelo['tablas']}. Columnas: {modelo['columnas']}. Objetivo: {objetivo}. Diseña una estructura visual indicando qué columnas usar."
-                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
-                        if exito: st.markdown(respuesta)
-                        else: st.error(respuesta)
+                    contexto = f"Diseña un dashboard para: {objetivo}. Usa estas tablas: {data['tablas']}. Estructura visual clara."
+                    respuesta = peticion_ia(contexto, modelo_api, api_key)
+                    st.markdown(respuesta)
 
-        # ---------------- TAB 3: AUDITORÍA ----------------
-        with tab3:
-            st.warning("Se escaneará tu modelo en busca de malas prácticas.")
-            if st.button("🩺 Ejecutar Auditoría", key="btn_audit"):
-                if not api_key: st.error("Falta API Key")
+        with t3:
+            if st.button("🩺 Analizar Salud del Modelo"):
+                if not api_key: st.error("Falta la clave API")
                 else:
-                    with st.spinner("Escaneando debilidades..."):
-                        prompt = f"Actúa como Arquitecto de Datos. Analiza este modelo: {modelo}. Busca errores comunes. Devuelve un informe con Puntuación, Puntos Críticos y Puntos de Mejora."
-                        exito, respuesta = llamar_ia_con_respaldo(prompt, modelo_api, api_key)
-                        if exito: st.markdown(respuesta)
-                        else: st.error(respuesta)
-
-else:
-    st.info("Sube un proyecto de Power BI (.zip) o un Excel (.xlsx) para desbloquear las herramientas.")
+                    contexto = f"Audita este modelo: {data}. Busca fallos de diseño o falta de tablas clave."
+                    respuesta = peticion_ia(contexto, modelo_api, api_key)
+                    st.markdown(respuesta)
