@@ -1,24 +1,2 @@
-import requests
-
-# 1. PON TU NUEVA CLAVE AQUÍ ADENTRO (MANTÉN LAS COMILLAS)
-API_KEY = "AIzaSyABx78bV6JrmmnUIXYAId5CUODTZs3lBHs"
-
-print("📡 Conectando con Gemini 2.5 Flash...")
-
-url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={API_KEY}"
-payload = {"contents": [{"parts": [{"text": "Hola, actúa como un experto en DAX. Dime si estás recibiendo este mensaje y estás listo para trabajar."}]}]}
-
-try:
-    respuesta = requests.post(url, json=payload, timeout=30)
-    
-    print(f"\n📊 CÓDIGO DE ESTADO: {respuesta.status_code}")
-    
-    if respuesta.status_code == 200:
-        print("✅ ¡ÉXITO! La IA dice:")
-        print(respuesta.json()['candidates'][0]['content']['parts'][0]['text'])
-    else:
-        print("❌ ERROR DE GOOGLE:")
-        print(respuesta.text) # Esto nos dará el motivo exacto, sin filtros.
-
-except Exception as e:
-    print(f"❌ Error físico de conexión: {e}")
+streamlit
+requests
